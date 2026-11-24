@@ -1,0 +1,11 @@
+\i esquema/01_esquema.sql
+\i datos_semilla/01_seed_confederacion.sql
+\i datos_semilla/02_seed_pais.sql
+\i datos_semilla/03_seed_grupo.sql
+\i datos_semilla/04_seed_ronda.sql
+\i datos_semilla/05_seed_seleccion.sql
+\i datos_semilla/06_seed_ciudad_sede.sql
+\i datos_semilla/07_seed_estadio.sql
+\i datos_semilla/08_seed_personal_seleccion.sql
+\i datos_semilla/09_seed_jugador.sql
+\i datos_semilla/10_seed_cuerpo_tecnico.sql
