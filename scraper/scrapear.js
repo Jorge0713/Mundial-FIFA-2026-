@@ -19,6 +19,15 @@ const RONDAS = [
   ['Fase de grupos', false], ['Dieciseisavos de final', true], ['Octavos de final', true],
   ['Cuartos de final', true], ['Semifinales', true], ['Partido por el tercer lugar', true], ['Final', true],
 ];
+const CATALOGOS = require('./fuentes/catalogos.json');
+// Tipos de evento de /timelines que son jugadas del partido (se omiten inicio, fin, sorteo
+// de campos, retrasos y reanudaciones). Se limpia el texto que da la API.
+const EVENTO = { 0: 'Gol', 4: 'Segunda tarjeta amarilla', 71: 'Revisión del VAR' };
+const EVENTOS_JUGADA = [0, 34, 41, 6, 60, 2, 4, 3, 5, 12, 57, 15, 16, 18, 71];
+// OfficialType de /live/football, sin las formas "o/a" de la API
+const ROL = { 1: 'Árbitro', 2: 'Primer árbitro asistente', 3: 'Segundo árbitro asistente',
+  4: 'Cuarto árbitro', 5: 'Árbitro asistente de video (VAR)', 6: 'Árbitro de reserva',
+  8: 'Asistente del VAR', 9: 'Asistente de apoyo' };
 const POSICION = ['arquero', 'defensor', 'mediocampista', 'delantero']; // Position 0..3 de la API
 const CARGO = { 0: 'director_tecnico', 1: 'auxiliar_tecnico' }; // Role de la API
 
@@ -83,8 +92,8 @@ function escribir(archivo, tabla, columnas, filas, nota) {
     `SELECT setval(pg_get_serial_sequence('${tabla}', '${columnas[0]}'), (SELECT MAX(${columnas[0]}) FROM ${tabla}));`,
     '',
   ];
-  // Las tablas subtipo no tienen secuencia propia
-  if (!/_id$/.test(columnas[0]) || ['jugador', 'cuerpo_tecnico'].includes(tabla)) lineas.splice(-3, 2);
+  // Las tablas subtipo e intermedias no tienen secuencia propia
+  if (!/_id$/.test(columnas[0]) || ['jugador', 'cuerpo_tecnico', 'nivel_amenidad', 'nivel_version'].includes(tabla)) lineas.splice(-3, 2);
   fs.writeFileSync(path.join(SALIDA, archivo), lineas.join('\n'));
   console.log(`${archivo}: ${filas.length}`);
 }
@@ -154,6 +163,7 @@ function escribir(archivo, tabla, columnas, filas, nota) {
     ciudadOrden.map((c, i) => [i + 1, c, paisId.get(ciudades.get(c))]));
   const est = [...estadios.values()].sort((a, b) => txt(a.Name).localeCompare(txt(b.Name), 'es'));
   for (const s of est) if (!DATO_ESTADIO.has(txt(s.Name))) throw new Error('Sin datos en fuentes/estadios.json: ' + txt(s.Name));
+  const estadioId = new Map(est.map((s, i) => [s.IdStadium, i + 1]));
   escribir('07_seed_estadio.sql', 'estadio',
     ['estadio_id', 'nombre', 'nombre_fifa', 'capacidad', 'capacidad_fifa', 'direccion',
       'municipio', 'estado', 'codigo_postal', 'ciudad_sede_id'],
@@ -195,4 +205,73 @@ function escribir(archivo, tabla, columnas, filas, nota) {
   escribir('09_seed_jugador.sql', 'jugador', ['personal_seleccion_id', 'posicion', 'dorsal'], jugadores);
   escribir('10_seed_cuerpo_tecnico.sql', 'cuerpo_tecnico', ['personal_seleccion_id', 'pais_id', 'cargo'], tecnicos,
     'La FIFA solo publica dos cargos: director técnico (Role 0) y auxiliar técnico (Role 1)');
+
+  // 11 a 17 Catálogos de hospitalidad y boletos (scraper/fuentes/catalogos.json)
+  const C = CATALOGOS;
+  escribir('11_seed_nivel.sql', 'nivel', ['nivel_id', 'nombre', 'descripcion'], C.nivel.map((x, i) => [i + 1, x.nombre, x.descripcion]));
+  escribir('12_seed_amenidad.sql', 'amenidad', ['amenidad_id', 'nombre'], C.amenidad.map((x, i) => [i + 1, x.nombre]));
+  const idDe = (lista, nombre) => {
+    const i = lista.findIndex(x => x.nombre === nombre);
+    if (i < 0) throw new Error(`No existe "${nombre}" en catalogos.json`);
+    return i + 1;
+  };
+  const nivelAmenidad = [], nivelVersion = [];
+  for (const n of C.nivel) {
+    for (const a of [...C.nivel_amenidad.todos, ...C.nivel_amenidad[n.nombre]])
+      nivelAmenidad.push([idDe(C.nivel, n.nombre), idDe(C.amenidad, a)]);
+    for (const v of C.nivel_version[n.nombre])
+      nivelVersion.push([idDe(C.nivel, n.nombre), v]);
+  }
+  escribir('13_seed_nivel_amenidad.sql', 'nivel_amenidad', ['nivel_id', 'amenidad_id'], nivelAmenidad);
+  escribir('14_seed_nivel_version.sql', 'nivel_version', ['nivel_id', 'version'], nivelVersion);
+  escribir('15_seed_paquete.sql', 'paquete', ['paquete_id', 'nombre', 'descripcion'], C.paquete.map((x, i) => [i + 1, x.nombre, x.descripcion]));
+  escribir('16_seed_categoria.sql', 'categoria', ['categoria_id', 'nombre', 'descripcion'], C.categoria.map((x, i) => [i + 1, x.nombre, x.descripcion]));
+  escribir('17_seed_fase_venta.sql', 'fase_venta', ['fase_venta_id', 'nombre', 'fecha_inicio', 'fecha_fin'],
+    C.fase_venta.map((x, i) => [i + 1, x.nombre, x.fecha_inicio, x.fecha_fin]));
+
+  // 18 Evento y 19 Rol: tipos que aparecen en los 104 partidos (cronología y árbitros)
+  const tipoEvento = new Map(), tipoRol = new Set(), finPartido = new Map();
+  for (const p of partidos) {
+    const ruta = `${COMP}/${TEMP}/${p.IdStage}/${p.IdMatch}`;
+    for (const e of (await api(`/timelines/${ruta}`)).Event || []) {
+      if (!tipoEvento.has(e.Type)) tipoEvento.set(e.Type, txt(e.TypeLocalized));
+      // Tipo 26 "Final de partido". El M85 lo trae dos veces (la segunda 27 minutos
+      // después, ya sin juego): se toma el primero
+      if (e.Type === 26 && (!finPartido.has(p.IdMatch) || e.Timestamp < finPartido.get(p.IdMatch)))
+        finPartido.set(p.IdMatch, e.Timestamp);
+    }
+    for (const o of (await api(`/live/football/${ruta}`)).Officials || []) tipoRol.add(o.OfficialType);
+  }
+  const eventos = EVENTOS_JUGADA.filter(t => tipoEvento.has(t)).map(t => EVENTO[t] || tipoEvento.get(t));
+  escribir('18_seed_evento.sql', 'evento', ['evento_id', 'nombre'], eventos.map((n, i) => [i + 1, n]));
+  const roles = [...tipoRol].sort((a, b) => a - b).map(t => ROL[t]).filter(Boolean);
+  escribir('19_seed_rol.sql', 'rol', ['rol_id', 'nombre'], roles.map((n, i) => [i + 1, n]));
+
+  // 20 Partido: en orden de número de partido, así partido_id = M1..M104 de la FIFA.
+  // Fecha y horas en hora local del estadio. Inicio = hora programada (LocalDate de la API,
+  // que viene con "Z" pero ya es hora local); término = evento "Final de partido" (UTC)
+  // movido a hora local con la diferencia entre LocalDate y Date.
+  const iso = s => {
+    if (!/^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d(\.\d+)?Z$/.test(s)) throw new Error('Fecha inesperada: ' + s);
+    return new Date(s);
+  };
+  const local = (p, utc) => new Date(iso(utc).getTime() + iso(p.LocalDate).getTime() - iso(p.Date).getTime());
+  const fecha = d => d.toISOString().slice(0, 10);
+  const hora = d => d.toISOString().slice(11, 19);
+  const porNumero = [...partidos].sort((a, b) => a.MatchNumber - b.MatchNumber);
+  porNumero.forEach((p, i) => { if (p.MatchNumber !== i + 1) throw new Error(`Falta el partido ${i + 1}`); });
+  // Las rondas de la API se ordenan por su primer partido (grupos M1, dieciseisavos M73...)
+  const etapas = [...new Set(porNumero.map(p => p.IdStage))];
+  if (etapas.length !== RONDAS.length) throw new Error(`La API trae ${etapas.length} rondas, se esperaban ${RONDAS.length}`);
+  const rondaId = new Map(etapas.map((s, i) => [s, i + 1]));
+  const equipo = e => (e && e.IdTeam ? selId.get(e.IdTeam) : null);
+  escribir('20_seed_partido.sql', 'partido',
+    ['partido_id', 'fecha', 'hora_inicio', 'hora_termino', 'asistencia', 'local_id', 'visitante_id',
+      'plantilla_local', 'plantilla_visitante', 'estadio_id', 'ronda_id'],
+    porNumero.map(p => [p.MatchNumber, fecha(iso(p.LocalDate)), hora(iso(p.LocalDate)),
+      finPartido.has(p.IdMatch) ? hora(local(p, finPartido.get(p.IdMatch))) : null,
+      p.Attendance ? Number(p.Attendance) : null,
+      equipo(p.Home), equipo(p.Away),
+      (p.Home && p.Home.Tactics) || null, (p.Away && p.Away.Tactics) || null,
+      estadioId.get(p.Stadium.IdStadium), rondaId.get(p.IdStage)]));
 })().catch(e => { console.error(e.message); process.exit(1); });

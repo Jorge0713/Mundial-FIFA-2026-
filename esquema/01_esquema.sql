@@ -1,9 +1,12 @@
-DROP TABLE IF EXISTS cuerpo_tecnico, jugador, personal_seleccion, estadio, ciudad_sede,
-    seleccion, ronda, grupo, pais, confederacion CASCADE;
-DROP TYPE IF EXISTS posicion_jugador, cargo_cuerpo_tecnico;
+DROP TABLE IF EXISTS partido, cuerpo_tecnico, jugador, personal_seleccion, estadio, ciudad_sede,
+    seleccion, ronda, grupo, pais, confederacion,
+    nivel_amenidad, nivel_version,
+    nivel, amenidad, paquete, categoria, fase_venta, evento, rol CASCADE;
+DROP TYPE IF EXISTS posicion_jugador, cargo_cuerpo_tecnico, version_nivel;
 
 CREATE TYPE posicion_jugador AS ENUM ('arquero', 'defensor', 'mediocampista', 'delantero');
 CREATE TYPE cargo_cuerpo_tecnico AS ENUM ('director_tecnico', 'auxiliar_tecnico', 'preparador_fisico', 'entrenador_porteros');
+CREATE TYPE version_nivel AS ENUM ('estandar', 'plus');
 
 CREATE TABLE confederacion (
     confederacion_id  serial,
@@ -76,6 +79,70 @@ CREATE TABLE cuerpo_tecnico (
     cargo                  cargo_cuerpo_tecnico NOT NULL
 );
 
+CREATE TABLE nivel (
+    nivel_id     serial,
+    nombre       varchar(50)  NOT NULL,
+    descripcion  varchar(300) NOT NULL
+);
+
+CREATE TABLE amenidad (
+    amenidad_id  serial,
+    nombre       varchar(100) NOT NULL
+);
+
+CREATE TABLE nivel_amenidad (
+    nivel_id     integer NOT NULL,
+    amenidad_id  integer NOT NULL
+);
+
+CREATE TABLE nivel_version (
+    nivel_id  integer       NOT NULL,
+    version   version_nivel NOT NULL
+);
+
+CREATE TABLE paquete (
+    paquete_id   serial,
+    nombre       varchar(50)  NOT NULL,
+    descripcion  varchar(300) NOT NULL
+);
+
+CREATE TABLE categoria (
+    categoria_id  serial,
+    nombre        varchar(50)  NOT NULL,
+    descripcion   varchar(300) NOT NULL
+);
+
+CREATE TABLE fase_venta (
+    fase_venta_id  serial,
+    nombre         varchar(100) NOT NULL,
+    fecha_inicio   date         NOT NULL,
+    fecha_fin      date         NOT NULL
+);
+
+CREATE TABLE evento (
+    evento_id  serial,
+    nombre     varchar(50) NOT NULL
+);
+
+CREATE TABLE rol (
+    rol_id  serial,
+    nombre  varchar(50) NOT NULL
+);
+
+CREATE TABLE partido (
+    partido_id           serial,
+    fecha                date        NOT NULL,
+    hora_inicio          time        NOT NULL,
+    hora_termino         time,
+    asistencia           integer,
+    local_id             integer,
+    visitante_id         integer,
+    plantilla_local      varchar(10),
+    plantilla_visitante  varchar(10),
+    estadio_id           integer     NOT NULL,
+    ronda_id             integer     NOT NULL
+);
+
 ALTER TABLE confederacion      ADD CONSTRAINT pk_confederacion      PRIMARY KEY (confederacion_id);
 ALTER TABLE pais               ADD CONSTRAINT pk_pais               PRIMARY KEY (pais_id);
 ALTER TABLE grupo              ADD CONSTRAINT pk_grupo              PRIMARY KEY (grupo_id);
@@ -86,6 +153,16 @@ ALTER TABLE estadio            ADD CONSTRAINT pk_estadio            PRIMARY KEY 
 ALTER TABLE personal_seleccion ADD CONSTRAINT pk_personal_seleccion PRIMARY KEY (personal_seleccion_id);
 ALTER TABLE jugador            ADD CONSTRAINT pk_jugador            PRIMARY KEY (personal_seleccion_id);
 ALTER TABLE cuerpo_tecnico     ADD CONSTRAINT pk_cuerpo_tecnico     PRIMARY KEY (personal_seleccion_id);
+ALTER TABLE nivel              ADD CONSTRAINT pk_nivel              PRIMARY KEY (nivel_id);
+ALTER TABLE amenidad           ADD CONSTRAINT pk_amenidad           PRIMARY KEY (amenidad_id);
+ALTER TABLE nivel_amenidad     ADD CONSTRAINT pk_nivel_amenidad     PRIMARY KEY (nivel_id, amenidad_id);
+ALTER TABLE nivel_version      ADD CONSTRAINT pk_nivel_version      PRIMARY KEY (nivel_id, version);
+ALTER TABLE paquete            ADD CONSTRAINT pk_paquete            PRIMARY KEY (paquete_id);
+ALTER TABLE categoria          ADD CONSTRAINT pk_categoria          PRIMARY KEY (categoria_id);
+ALTER TABLE fase_venta         ADD CONSTRAINT pk_fase_venta         PRIMARY KEY (fase_venta_id);
+ALTER TABLE evento             ADD CONSTRAINT pk_evento             PRIMARY KEY (evento_id);
+ALTER TABLE rol                ADD CONSTRAINT pk_rol                PRIMARY KEY (rol_id);
+ALTER TABLE partido            ADD CONSTRAINT pk_partido            PRIMARY KEY (partido_id);
 
 ALTER TABLE confederacion ADD CONSTRAINT uq_confederacion_siglas UNIQUE (siglas);
 ALTER TABLE pais          ADD CONSTRAINT uq_pais_codigo          UNIQUE (codigo);
@@ -97,6 +174,14 @@ ALTER TABLE seleccion     ADD CONSTRAINT uq_seleccion_nombre     UNIQUE (nombre)
 ALTER TABLE ciudad_sede   ADD CONSTRAINT uq_ciudad_sede_nombre   UNIQUE (nombre);
 ALTER TABLE estadio       ADD CONSTRAINT uq_estadio_nombre       UNIQUE (nombre);
 ALTER TABLE estadio       ADD CONSTRAINT uq_estadio_nombre_fifa  UNIQUE (nombre_fifa);
+ALTER TABLE nivel         ADD CONSTRAINT uq_nivel_nombre         UNIQUE (nombre);
+ALTER TABLE amenidad      ADD CONSTRAINT uq_amenidad_nombre      UNIQUE (nombre);
+ALTER TABLE paquete       ADD CONSTRAINT uq_paquete_nombre       UNIQUE (nombre);
+ALTER TABLE categoria     ADD CONSTRAINT uq_categoria_nombre     UNIQUE (nombre);
+ALTER TABLE fase_venta    ADD CONSTRAINT uq_fase_venta_nombre    UNIQUE (nombre);
+ALTER TABLE evento        ADD CONSTRAINT uq_evento_nombre        UNIQUE (nombre);
+ALTER TABLE rol           ADD CONSTRAINT uq_rol_nombre           UNIQUE (nombre);
+ALTER TABLE partido       ADD CONSTRAINT uq_partido_estadio_inicio UNIQUE (estadio_id, fecha, hora_inicio);
 
 ALTER TABLE seleccion ADD CONSTRAINT fk_seleccion_confederacion
     FOREIGN KEY (confederacion_id) REFERENCES confederacion (confederacion_id);
@@ -114,6 +199,20 @@ ALTER TABLE cuerpo_tecnico ADD CONSTRAINT fk_cuerpo_tecnico_personal_seleccion
     FOREIGN KEY (personal_seleccion_id) REFERENCES personal_seleccion (personal_seleccion_id) ON DELETE CASCADE;
 ALTER TABLE cuerpo_tecnico ADD CONSTRAINT fk_cuerpo_tecnico_pais
     FOREIGN KEY (pais_id) REFERENCES pais (pais_id);
+ALTER TABLE nivel_amenidad ADD CONSTRAINT fk_nivel_amenidad_nivel
+    FOREIGN KEY (nivel_id) REFERENCES nivel (nivel_id);
+ALTER TABLE nivel_amenidad ADD CONSTRAINT fk_nivel_amenidad_amenidad
+    FOREIGN KEY (amenidad_id) REFERENCES amenidad (amenidad_id);
+ALTER TABLE nivel_version ADD CONSTRAINT fk_nivel_version_nivel
+    FOREIGN KEY (nivel_id) REFERENCES nivel (nivel_id);
+ALTER TABLE partido ADD CONSTRAINT fk_partido_local
+    FOREIGN KEY (local_id) REFERENCES seleccion (seleccion_id);
+ALTER TABLE partido ADD CONSTRAINT fk_partido_visitante
+    FOREIGN KEY (visitante_id) REFERENCES seleccion (seleccion_id);
+ALTER TABLE partido ADD CONSTRAINT fk_partido_estadio
+    FOREIGN KEY (estadio_id) REFERENCES estadio (estadio_id);
+ALTER TABLE partido ADD CONSTRAINT fk_partido_ronda
+    FOREIGN KEY (ronda_id) REFERENCES ronda (ronda_id);
 
 ALTER TABLE pais        ADD CONSTRAINT ck_pais_codigo            CHECK (codigo ~ '^[A-Z]{3}$');
 ALTER TABLE grupo       ADD CONSTRAINT ck_grupo_nombre           CHECK (nombre BETWEEN 'A' AND 'L');
@@ -124,3 +223,10 @@ ALTER TABLE estadio     ADD CONSTRAINT ck_estadio_capacidad_fifa CHECK (capacida
 ALTER TABLE personal_seleccion ADD CONSTRAINT ck_personal_fecha_nacimiento
     CHECK (fecha_nacimiento BETWEEN DATE '1940-01-01' AND DATE '2012-12-31');
 ALTER TABLE jugador     ADD CONSTRAINT ck_jugador_dorsal         CHECK (dorsal BETWEEN 1 AND 26);
+ALTER TABLE fase_venta  ADD CONSTRAINT ck_fase_venta_fechas      CHECK (fecha_fin >= fecha_inicio);
+ALTER TABLE partido     ADD CONSTRAINT ck_partido_asistencia     CHECK (asistencia > 0);
+ALTER TABLE partido     ADD CONSTRAINT ck_partido_selecciones    CHECK (local_id <> visitante_id);
+ALTER TABLE partido     ADD CONSTRAINT ck_partido_plantilla_local
+    CHECK (plantilla_local ~ '^[1-9](-[1-9]){2,4}$');
+ALTER TABLE partido     ADD CONSTRAINT ck_partido_plantilla_visitante
+    CHECK (plantilla_visitante ~ '^[1-9](-[1-9]){2,4}$');

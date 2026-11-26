@@ -1,0 +1,79 @@
+{
+  "_fuentes": {
+    "nivel": "Página principal del sitio oficial de hospitalidad (On Location), copia archivada del 08/02/2026: https://web.archive.org/web/20260208215204/https://fifaworldcup26.hospitality.fifa.com/ (sección 'Unrivaled lounge access'). Descripciones resumidas en español.",
+    "amenidad": "Mismo sitio oficial ('premium tickets, food & beverage, entertainment') y worldcupwiki.com/fifa-world-cup-2026-hospitality, secciones 'Lounge tiers' y 'What's included'.",
+    "paquete": "Sitio oficial de hospitalidad, copia archivada del 08/02/2026 (Match offerings, Private suites, Additional offerings) y worldcupwiki.com ('Path to the Final').",
+    "categoria": "Soporte oficial de boletos de la FIFA: https://gpcustomersupportfwc2026.tickets.fifa.com/hc/es/articles/30067225701789",
+    "fase_venta": "Soporte oficial de boletos de la FIFA: https://gpcustomersupportfwc2026.tickets.fifa.com/hc/es/articles/30519468735133 (fechas del periodo de registro o venta).",
+    "consultado": "2026-11-23"
+  },
+  "nivel": [
+    { "nombre": "Pitchside Lounge", "descripcion": "Salón a nivel de cancha con los asientos más cercanos al campo; el nivel compartido más alto." },
+    { "nombre": "VIP", "descripcion": "Salón de lujo con asientos laterales preferentes y vista privilegiada del partido." },
+    { "nombre": "Trophy Lounge", "descripcion": "Salón elevado con muy buena vista, gastronomía de alto nivel y servicio premium." },
+    { "nombre": "Champions Club", "descripcion": "Asientos junto a las áreas de hospitalidad, con acceso cercano a las amenidades premium." },
+    { "nombre": "FIFA Pavilion", "descripcion": "Pabellón exclusivo junto al estadio, dentro del perímetro de seguridad; nivel de entrada." }
+  ],
+  "amenidad": [
+    { "nombre": "Asiento preferente" },
+    { "nombre": "Salón climatizado" },
+    { "nombre": "Comida regional de chefs locales" },
+    { "nombre": "Bebidas ilimitadas con y sin alcohol" },
+    { "nombre": "Filtro de seguridad exclusivo" },
+    { "nombre": "Concierge en el estadio" },
+    { "nombre": "Regalo conmemorativo oficial" },
+    { "nombre": "Estaciones de cocina en vivo" },
+    { "nombre": "Servicio de bebidas guiado por sumiller" },
+    { "nombre": "Estaciones de menú temático" },
+    { "nombre": "Menú de chef con ingredientes locales" },
+    { "nombre": "Comida callejera regional" },
+    { "nombre": "Programación antes y después del partido" },
+    { "nombre": "Entretenimiento en vivo" },
+    { "nombre": "Visita de exjugadores" },
+    { "nombre": "Menú halal y kosher a solicitud" }
+  ],
+  "nivel_amenidad": {
+    "_fuente": "worldcupwiki.com/fifa-world-cup-2026-hospitality: 'Every hospitality package includes' (comunes a todos los niveles) y 'Lounge tiers' (propias de cada nivel). 'Premium tiers add ... former players, live entertainment' se interpretó como Pitchside Lounge y VIP (exjugadores) y FIFA Pavilion (entretenimiento y programación).",
+    "todos": ["Asiento preferente", "Salón climatizado", "Comida regional de chefs locales", "Bebidas ilimitadas con y sin alcohol", "Filtro de seguridad exclusivo", "Concierge en el estadio", "Regalo conmemorativo oficial", "Menú halal y kosher a solicitud"],
+    "Pitchside Lounge": ["Estaciones de cocina en vivo", "Visita de exjugadores"],
+    "VIP": ["Servicio de bebidas guiado por sumiller", "Estaciones de menú temático", "Visita de exjugadores"],
+    "Trophy Lounge": [],
+    "Champions Club": ["Menú de chef con ingredientes locales"],
+    "FIFA Pavilion": ["Comida callejera regional", "Programación antes y después del partido", "Entretenimiento en vivo"]
+  },
+  "nivel_version": {
+    "_fuente": "worldcupwiki.com: 'Each tier offers both standard and Plus seating versions at most venues'; confirmados por nombre 'FIFA Pavilion Plus' (fifaworldcupnews.com) y 'Pitchside Lounge Standard+' (tixomi.com).",
+    "Pitchside Lounge": ["estandar", "plus"],
+    "VIP": ["estandar", "plus"],
+    "Trophy Lounge": ["estandar", "plus"],
+    "Champions Club": ["estandar", "plus"],
+    "FIFA Pavilion": ["estandar", "plus"]
+  },
+  "paquete": [
+    { "nombre": "Partido individual", "descripcion": "Un partido a elegir de fase de grupos o eliminatoria, excepto la final." },
+    { "nombre": "Serie de sede", "descripcion": "Todos los partidos de un mismo estadio, de 4 a 9 según la sede." },
+    { "nombre": "Sigue a tu selección", "descripcion": "Los partidos de una selección no anfitriona en la primera fase, en cualquier sede." },
+    { "nombre": "Serie multipartido", "descripcion": "De 4 a 5 partidos elegidos por etapas; da acceso a partidos de Estados Unidos y a la final." },
+    { "nombre": "Camino a la final", "descripcion": "Las dos semifinales y la final." },
+    { "nombre": "Suite privada", "descripcion": "Suite para el grupo con entrada preferente, acceso directo al asiento y servicio dedicado." },
+    { "nombre": "Platinum Access", "descripcion": "La oferta más exclusiva, personalizada y solo por solicitud." }
+  ],
+  "categoria": [
+    { "nombre": "Categoría 1", "descripcion": "Los boletos más caros, en las zonas preferentes de la grada inferior." },
+    { "nombre": "Categoría 2", "descripcion": "Fuera de la categoría 1, en grada inferior y superior." },
+    { "nombre": "Categoría 3", "descripcion": "Fuera de las categorías 1 y 2, generalmente en grada superior." },
+    { "nombre": "Categoría 4", "descripcion": "La más económica, fuera de las categorías 1 a 3, en grada superior." },
+    { "nombre": "Accesibilidad", "descripcion": "Zona para personas con discapacidad y movilidad reducida." },
+    { "nombre": "Aficionados sección referente", "descripcion": "Boleto de aficionado de selección, la zona más cercana al campo." },
+    { "nombre": "Aficionados sección estándar", "descripcion": "Boleto de aficionado de selección, detrás de la sección referente." },
+    { "nombre": "Aficionados sección económica", "descripcion": "Boleto de aficionado de selección, detrás de la sección estándar." },
+    { "nombre": "Aficionados grada básica", "descripcion": "Boleto de aficionado asignado directamente por cada federación." }
+  ],
+  "fase_venta": [
+    { "nombre": "Sorteo preferente de Visa", "fecha_inicio": "2025-09-10", "fecha_fin": "2025-09-19" },
+    { "nombre": "Sorteo anticipado", "fecha_inicio": "2025-10-27", "fecha_fin": "2025-10-31" },
+    { "nombre": "Sorteo aleatorio", "fecha_inicio": "2025-12-11", "fecha_fin": "2026-01-13" },
+    { "nombre": "Aficionados de federaciones clasificadas de última hora", "fecha_inicio": "2026-04-01", "fecha_fin": "2026-04-21" },
+    { "nombre": "Venta de última hora", "fecha_inicio": "2026-04-01", "fecha_fin": "2026-07-19" }
+  ]
+}

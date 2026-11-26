@@ -9,3 +9,13 @@
 \i datos_semilla/08_seed_personal_seleccion.sql
 \i datos_semilla/09_seed_jugador.sql
 \i datos_semilla/10_seed_cuerpo_tecnico.sql
+\i datos_semilla/11_seed_nivel.sql
+\i datos_semilla/12_seed_amenidad.sql
+\i datos_semilla/13_seed_nivel_amenidad.sql
+\i datos_semilla/14_seed_nivel_version.sql
+\i datos_semilla/15_seed_paquete.sql
+\i datos_semilla/16_seed_categoria.sql
+\i datos_semilla/17_seed_fase_venta.sql
+\i datos_semilla/18_seed_evento.sql
+\i datos_semilla/19_seed_rol.sql
+\i datos_semilla/20_seed_partido.sql
