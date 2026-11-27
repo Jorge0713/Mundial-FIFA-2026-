@@ -1,0 +1,25 @@
+INSERT INTO evento (evento_id, nombre) VALUES
+    (1, 'Gol'),
+    (2, 'Gol en propia puerta'),
+    (3, 'Gol de penal'),
+    (4, 'Asistencia'),
+    (5, 'Penal señalado'),
+    (6, 'Penal fallado'),
+    (7, 'Tarjeta amarilla'),
+    (8, 'Segunda tarjeta amarilla'),
+    (9, 'Tarjeta roja'),
+    (10, 'Falta'),
+    (11, 'Saque de esquina'),
+    (12, 'Fuera de juego'),
+    (13, 'Remate'),
+    (14, 'Parada'),
+    (15, 'Sustitución'),
+    (16, 'Revisión del VAR'),
+    (17, 'Sorteo de campos'),
+    (18, 'Inicio de periodo'),
+    (19, 'Fin de periodo'),
+    (20, 'Retraso'),
+    (21, 'Reanudación'),
+    (22, 'Final de partido');
+
+SELECT setval(pg_get_serial_sequence('evento', 'evento_id'), (SELECT MAX(evento_id) FROM evento));

@@ -1,18 +1,16 @@
-DROP TABLE IF EXISTS partido, cuerpo_tecnico, jugador, personal_seleccion, estadio, ciudad_sede,
-    seleccion, ronda, grupo, pais, confederacion,
+DROP TABLE IF EXISTS cronologia, partido, partido_venta, cuerpo_tecnico, jugador, personal_seleccion, estadio, ciudad_sede,
+    seleccion, ronda, grupo, pais,
     nivel_amenidad, nivel_version,
     nivel, amenidad, paquete, categoria, fase_venta, evento, rol CASCADE;
-DROP TYPE IF EXISTS posicion_jugador, cargo_cuerpo_tecnico, version_nivel;
+DROP TYPE IF EXISTS posicion_jugador, cargo_cuerpo_tecnico, version_nivel, periodo_partido;
 
 CREATE TYPE posicion_jugador AS ENUM ('arquero', 'defensor', 'mediocampista', 'delantero');
-CREATE TYPE cargo_cuerpo_tecnico AS ENUM ('director_tecnico', 'auxiliar_tecnico', 'preparador_fisico', 'entrenador_porteros');
+CREATE TYPE cargo_cuerpo_tecnico AS ENUM ('director_tecnico', 'auxiliar_tecnico', 'entrenador_porteros', 'preparador_fisico',
+    'fisioterapeuta', 'masajista', 'jefe_de_equipo', 'otro');
 CREATE TYPE version_nivel AS ENUM ('estandar', 'plus');
-
-CREATE TABLE confederacion (
-    confederacion_id  serial,
-    siglas            varchar(10)  NOT NULL,
-    nombre            varchar(100) NOT NULL
-);
+CREATE TYPE periodo_partido AS ENUM ('antes_del_partido', 'primer_tiempo', 'descanso', 'segundo_tiempo',
+    'antes_de_prorroga', 'prorroga_primer_tiempo', 'descanso_prorroga', 'prorroga_segundo_tiempo',
+    'antes_de_penales', 'tanda_penales', 'fin_del_partido');
 
 CREATE TABLE pais (
     pais_id     serial,
@@ -33,11 +31,10 @@ CREATE TABLE ronda (
 );
 
 CREATE TABLE seleccion (
-    seleccion_id      serial,
-    nombre            varchar(100) NOT NULL,
-    codigo            char(3)      NOT NULL,
-    confederacion_id  integer      NOT NULL,
-    grupo_id          integer      NOT NULL
+    seleccion_id  serial,
+    nombre        varchar(100) NOT NULL,
+    codigo        char(3)      NOT NULL,
+    grupo_id      integer      NOT NULL
 );
 
 CREATE TABLE ciudad_sede (
@@ -129,9 +126,16 @@ CREATE TABLE rol (
     nombre  varchar(50) NOT NULL
 );
 
+CREATE TABLE partido_venta (
+    partido_venta_id  serial,
+    fecha             date    NOT NULL,
+    estadio_id        integer NOT NULL,
+    ronda_id          integer NOT NULL
+);
+
 CREATE TABLE partido (
     partido_id           serial,
-    fecha                date        NOT NULL,
+    partido_venta_id     integer     NOT NULL,
     hora_inicio          time        NOT NULL,
     hora_termino         time,
     asistencia           integer,
@@ -139,11 +143,21 @@ CREATE TABLE partido (
     visitante_id         integer,
     plantilla_local      varchar(10),
     plantilla_visitante  varchar(10),
-    estadio_id           integer     NOT NULL,
-    ronda_id             integer     NOT NULL
+    posesion_local       numeric(5,2),
+    posesion_visitante   numeric(5,2)
 );
 
-ALTER TABLE confederacion      ADD CONSTRAINT pk_confederacion      PRIMARY KEY (confederacion_id);
+CREATE TABLE cronologia (
+    cronologia_id    serial,
+    partido_id       integer         NOT NULL,
+    evento_id        integer         NOT NULL,
+    periodo          periodo_partido NOT NULL,
+    minuto           smallint,
+    tiempo_agregado  smallint,
+    entra_id         integer,
+    sale_id          integer
+);
+
 ALTER TABLE pais               ADD CONSTRAINT pk_pais               PRIMARY KEY (pais_id);
 ALTER TABLE grupo              ADD CONSTRAINT pk_grupo              PRIMARY KEY (grupo_id);
 ALTER TABLE ronda              ADD CONSTRAINT pk_ronda              PRIMARY KEY (ronda_id);
@@ -162,9 +176,10 @@ ALTER TABLE categoria          ADD CONSTRAINT pk_categoria          PRIMARY KEY 
 ALTER TABLE fase_venta         ADD CONSTRAINT pk_fase_venta         PRIMARY KEY (fase_venta_id);
 ALTER TABLE evento             ADD CONSTRAINT pk_evento             PRIMARY KEY (evento_id);
 ALTER TABLE rol                ADD CONSTRAINT pk_rol                PRIMARY KEY (rol_id);
+ALTER TABLE partido_venta      ADD CONSTRAINT pk_partido_venta      PRIMARY KEY (partido_venta_id);
 ALTER TABLE partido            ADD CONSTRAINT pk_partido            PRIMARY KEY (partido_id);
+ALTER TABLE cronologia         ADD CONSTRAINT pk_cronologia         PRIMARY KEY (cronologia_id);
 
-ALTER TABLE confederacion ADD CONSTRAINT uq_confederacion_siglas UNIQUE (siglas);
 ALTER TABLE pais          ADD CONSTRAINT uq_pais_codigo          UNIQUE (codigo);
 ALTER TABLE grupo         ADD CONSTRAINT uq_grupo_nombre         UNIQUE (nombre);
 ALTER TABLE ronda         ADD CONSTRAINT uq_ronda_nombre         UNIQUE (nombre);
@@ -181,10 +196,9 @@ ALTER TABLE categoria     ADD CONSTRAINT uq_categoria_nombre     UNIQUE (nombre)
 ALTER TABLE fase_venta    ADD CONSTRAINT uq_fase_venta_nombre    UNIQUE (nombre);
 ALTER TABLE evento        ADD CONSTRAINT uq_evento_nombre        UNIQUE (nombre);
 ALTER TABLE rol           ADD CONSTRAINT uq_rol_nombre           UNIQUE (nombre);
-ALTER TABLE partido       ADD CONSTRAINT uq_partido_estadio_inicio UNIQUE (estadio_id, fecha, hora_inicio);
+ALTER TABLE partido_venta ADD CONSTRAINT uq_partido_venta_estadio_fecha UNIQUE (estadio_id, fecha);
+ALTER TABLE partido       ADD CONSTRAINT uq_partido_partido_venta UNIQUE (partido_venta_id);
 
-ALTER TABLE seleccion ADD CONSTRAINT fk_seleccion_confederacion
-    FOREIGN KEY (confederacion_id) REFERENCES confederacion (confederacion_id);
 ALTER TABLE seleccion ADD CONSTRAINT fk_seleccion_grupo
     FOREIGN KEY (grupo_id) REFERENCES grupo (grupo_id);
 ALTER TABLE ciudad_sede ADD CONSTRAINT fk_ciudad_sede_pais
@@ -209,10 +223,20 @@ ALTER TABLE partido ADD CONSTRAINT fk_partido_local
     FOREIGN KEY (local_id) REFERENCES seleccion (seleccion_id);
 ALTER TABLE partido ADD CONSTRAINT fk_partido_visitante
     FOREIGN KEY (visitante_id) REFERENCES seleccion (seleccion_id);
-ALTER TABLE partido ADD CONSTRAINT fk_partido_estadio
+ALTER TABLE partido_venta ADD CONSTRAINT fk_partido_venta_estadio
     FOREIGN KEY (estadio_id) REFERENCES estadio (estadio_id);
-ALTER TABLE partido ADD CONSTRAINT fk_partido_ronda
+ALTER TABLE partido_venta ADD CONSTRAINT fk_partido_venta_ronda
     FOREIGN KEY (ronda_id) REFERENCES ronda (ronda_id);
+ALTER TABLE partido ADD CONSTRAINT fk_partido_partido_venta
+    FOREIGN KEY (partido_venta_id) REFERENCES partido_venta (partido_venta_id);
+ALTER TABLE cronologia ADD CONSTRAINT fk_cronologia_partido
+    FOREIGN KEY (partido_id) REFERENCES partido (partido_id);
+ALTER TABLE cronologia ADD CONSTRAINT fk_cronologia_evento
+    FOREIGN KEY (evento_id) REFERENCES evento (evento_id);
+ALTER TABLE cronologia ADD CONSTRAINT fk_cronologia_entra
+    FOREIGN KEY (entra_id) REFERENCES personal_seleccion (personal_seleccion_id);
+ALTER TABLE cronologia ADD CONSTRAINT fk_cronologia_sale
+    FOREIGN KEY (sale_id) REFERENCES personal_seleccion (personal_seleccion_id);
 
 ALTER TABLE pais        ADD CONSTRAINT ck_pais_codigo            CHECK (codigo ~ '^[A-Z]{3}$');
 ALTER TABLE grupo       ADD CONSTRAINT ck_grupo_nombre           CHECK (nombre BETWEEN 'A' AND 'L');
@@ -226,6 +250,13 @@ ALTER TABLE jugador     ADD CONSTRAINT ck_jugador_dorsal         CHECK (dorsal B
 ALTER TABLE fase_venta  ADD CONSTRAINT ck_fase_venta_fechas      CHECK (fecha_fin >= fecha_inicio);
 ALTER TABLE partido     ADD CONSTRAINT ck_partido_asistencia     CHECK (asistencia > 0);
 ALTER TABLE partido     ADD CONSTRAINT ck_partido_selecciones    CHECK (local_id <> visitante_id);
+ALTER TABLE partido     ADD CONSTRAINT ck_partido_posesion
+    CHECK (posesion_local BETWEEN 0 AND 100 AND posesion_visitante BETWEEN 0 AND 100
+        AND posesion_local + posesion_visitante <= 100);
+ALTER TABLE cronologia  ADD CONSTRAINT ck_cronologia_minuto      CHECK (minuto BETWEEN 0 AND 150);
+ALTER TABLE cronologia  ADD CONSTRAINT ck_cronologia_tiempo_agregado CHECK (tiempo_agregado > 0);
+ALTER TABLE cronologia  ADD CONSTRAINT ck_cronologia_personas
+    CHECK (sale_id IS NULL OR (entra_id IS NOT NULL AND entra_id <> sale_id));
 ALTER TABLE partido     ADD CONSTRAINT ck_partido_plantilla_local
     CHECK (plantilla_local ~ '^[1-9](-[1-9]){2,4}$');
 ALTER TABLE partido     ADD CONSTRAINT ck_partido_plantilla_visitante
